@@ -3,8 +3,7 @@ import { IsEmail, IsString, IsNotEmpty, MinLength,IsOptional } from 'class-valid
 export class SignInUserDto {
   @IsEmail({}, { message: 'Email must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
-  @IsOptional()
-  email?: string;
+  email: string;
 
   @IsString({ message: 'Username must be a string' })
   @IsNotEmpty({ message: 'Username is required' })

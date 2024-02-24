@@ -9,7 +9,7 @@ import { Model } from 'mongoose';
 import { HashService } from '../helpers/hash';
 import { ForgetUserDto } from './dto/forget-user.dto';
 import * as nodemailer from 'nodemailer';
-import { User, UserDocument } from '../schemas/user.schema';
+import { User } from '../schemas/user.schema';
 
 @Injectable()
 export class UserService { //UserService is decorated with @Injectable() to indicate that it is a provider that may have dependencies
@@ -19,7 +19,7 @@ export class UserService { //UserService is decorated with @Injectable() to indi
     ) {}// This means that userModel is an instance of the Mongoose model associated with the User schema, UserService  interact with the User model in the database using the Mongoose model.
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const [hashedPassword, hashedConfirmPassword] = await this.hashService.hashPasswords(createUserDto.password);
+    const hashedPassword = await this.hashService.hashPasswords(createUserDto.password);
     createUserDto.password = hashedPassword;
     
     const createdUser = new this.userModel(createUserDto);
@@ -55,7 +55,7 @@ export class UserService { //UserService is decorated with @Injectable() to indi
   }
  
   async updateUserById(updateUserDto:UpdateUserDto,userId:any) {
-    const hashedPassword:any = await this.hashService.hashPasswords(updateUserDto.password);
+    const hashedPassword = await this.hashService.hashPasswords(updateUserDto.password);
      console.log('hash=',hashedPassword)
     updateUserDto.password = hashedPassword;
 
@@ -68,16 +68,16 @@ export class UserService { //UserService is decorated with @Injectable() to indi
       return deletedUser;
   }
   
-  async generateOtp(forgetUserDto: ForgetUserDto): Promise<string> {
+  async generateOtp(forgetUserDto: ForgetUserDto): Promise<number> {
     const { email } = forgetUserDto;
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000);
     await this.userModel.findOneAndUpdate({ email }, { otp });
   
     return otp;
   }
   
 
-  async sendOtp(forgetUserDto: ForgetUserDto, otp: string): Promise<void> {
+  async sendOtp(forgetUserDto: ForgetUserDto, otp: number){
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',

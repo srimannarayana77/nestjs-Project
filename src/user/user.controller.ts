@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,UseGuards,Request} from '@nestjs/common';
-import { UserService } from './user.service';
-import { ValidationPipe } from '@nestjs/common';
+import { UserService } from './user.service'; 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SignInUserDto } from './dto/signin-user-dto';
@@ -10,6 +9,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ForgetUserDto } from './dto/forget-user.dto';
 import { AuthGuard } from 'src/middlewares/verifyToken';
 import { configData } from 'src/config/appConfig.';
+import {Users} from '../interfaces/user.interface'
+import { ApiResponse } from 'src/interfaces/apiResponse.interface';
 import * as bcrypt from 'bcrypt';
 
 @Controller('users')
@@ -17,21 +18,18 @@ export class UserController {
   constructor(private readonly userService: UserService,private readonly jwtService: JwtService,) {}
 
   @Post()
-  async create(@Body()createUserDto: CreateUserDto) {
+  async create(@Body()createUserDto: CreateUserDto):Promise<ApiResponse<Users[]>> {
     try {
-      if (createUserDto.password !== createUserDto.confirm_password) {
-        throw new HttpException({ message: 'Password and confirm password do not match' }, HttpStatus.BAD_REQUEST);
-      }
       const emailExists = await this.userService.emailExists(createUserDto.email);
       if (emailExists) {
-        throw new HttpException({ success:false,message: 'Email already exists' }, HttpStatus.BAD_REQUEST);
+       return { success:false,message: 'Email already exists' , status:HttpStatus.BAD_REQUEST};
       }
       const usernameExists = await this.userService.usernameExists(createUserDto.user_name);
       if (usernameExists) {
         throw new HttpException({success:false, message: 'Username already exists' }, HttpStatus.BAD_REQUEST);
       }
-      const createdUser = await this.userService.create(createUserDto);
-      return { success:true,user: createdUser, status: HttpStatus.CREATED };
+      const createdUser:Users = await this.userService.create(createUserDto);
+      return { success:true,data: createdUser, status: HttpStatus.CREATED };
     } catch (error) {
       console.error('Error for creating  user:',error)
       return { success:false, error: error.message ,status: HttpStatus.INTERNAL_SERVER_ERROR};
@@ -40,10 +38,10 @@ export class UserController {
   
 
   @Get('all')
-  async findAll() {
+  async findAll():Promise<ApiResponse<Users[]>> {
     try {
       const users = await this.userService.findAll();
-      return { success: true, users,status: HttpStatus.OK };
+      return { success: true, data:users,status: HttpStatus.OK };
     } catch (error) {
       console.error('Error for getall users:',error)
       return { success:false, error: error.message ,status: HttpStatus.INTERNAL_SERVER_ERROR};
@@ -51,24 +49,23 @@ export class UserController {
   }
 
   @Post('/signin')
-  async signIn(@Body() signInUserDto: SignInUserDto) {
+  async signIn(@Body() signInUserDto: SignInUserDto):Promise<ApiResponse<Users[]>> {
     try {
-      const user:any = await this.userService.findUserByEmailOrUsername(signInUserDto);
+      const user:Users = await this.userService.findUserByEmailOrUsername(signInUserDto);
       console.log("user=",user)
       if (!user) {
         return {success:false, message: 'User not found' , status:HttpStatus.NOT_FOUND};
       }
       const isPasswordValid = await bcrypt.compare(signInUserDto.password, user.password);
-      console.log("dto.passwrd=",signInUserDto.password)
-      console.log("password=",user.password)
       if (!isPasswordValid) {
         return {success:false, message: 'Invalid password' , status:HttpStatus.UNAUTHORIZED};
       }
       const expiresIn = 3600;
       const secretKey = configData.secretKey;
-      let userId = user._id;
-      const token = this.jwtService.sign({userId,email: user.email , password: user.password  }, { expiresIn, secret: secretKey });
-      return { success: true, user,token,status: HttpStatus.OK };
+      const access_token = this.jwtService.sign({userId:user._id,email: user.email , password: user.password  }, { expiresIn, secret: secretKey });
+      const userWithoutPassword = { ...user };
+      delete userWithoutPassword.password
+      return { success: true, data:{user,access_token},status: HttpStatus.OK };
     } catch (error) {
       console.error('Errors in signin:',error)
      return { success: false, error: error.message ,status:HttpStatus.INTERNAL_SERVER_ERROR};
@@ -77,88 +74,88 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get('profile')
-  async getUserProfile(@Request() req) {
+  async getUserProfile(@Request() req):Promise<ApiResponse<Users[]>> {
     try {
       const user = req.user
       console.log("userId=",user)
-      const userProfile = await this.userService.getUserById(user.userId);
+      const userProfile:Users = await this.userService.getUserById(user.userId);
       console.log("userprofile=",userProfile)
       if (!userProfile) {
         throw new HttpException({ success: false, message: 'User profile not found' }, HttpStatus.NOT_FOUND);
       }
-      return { success: true, userProfile,status: HttpStatus.OK  };
+      return { success: true, data:userProfile,status: HttpStatus.OK  };
     } catch (error) {
       console.error('Error for getting profile:',error)
-      throw new HttpException({ success: false, error: 'Internal server error' }, HttpStatus.INTERNAL_SERVER_ERROR);
+      return { success: false, error: 'Internal server error' ,status: HttpStatus.INTERNAL_SERVER_ERROR};
     }
   }
 
   
   @UseGuards(AuthGuard)
   @Patch('update')
-  async updateUserprofile(@Body()updateUserDto: CreateUserDto,@Request() req:any){
+  async updateUserprofile(@Body()updateUserDto: CreateUserDto,@Request() req):Promise<ApiResponse<Users[]>>{
     try {
       const updateUser = req.user 
       console.log("updateuser=",updateUser   )
-      const updateProfile = await this.userService.updateUserById(updateUserDto,updateUser.userId);
+      const updateProfile:Users = await this.userService.updateUserById(updateUserDto,updateUser.userId);
       console.log("updateprofile=",updateProfile);
+    
       if (!updateProfile) {
         throw new HttpException({ success: false, message: 'User profile not found' }, HttpStatus.NOT_FOUND);
       }
-      return {success: true, updateProfile,status: HttpStatus.OK};
+      return {success: true, data:updateProfile,status: HttpStatus.OK};
     }catch (error) {
       console.error('Error for updating profile:',error)
-      throw new HttpException({ success: false, error: 'Internal server error' }, HttpStatus.INTERNAL_SERVER_ERROR);
+      return { success: false, error: 'Internal server error' , status:HttpStatus.INTERNAL_SERVER_ERROR};
     }
   }
 
   @Delete(':id')
-  async deleteUser(@Param('id') userId: string) {
+  async deleteUser(@Param('id') userId: string):Promise<ApiResponse<Users[]>> {
     try {
-      const deletedUser = await this.userService.deleteUserById(userId);
+      const deletedUser:Users = await this.userService.deleteUserById(userId);
       if (!deletedUser) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      return { success: true, message: 'User deleted successfully', deletedUser ,status: HttpStatus.OK};
+      return { success: true, message: 'User deleted successfully', data:deletedUser ,status: HttpStatus.OK};
     } catch (error) {
       console.error('Error for delete user:',error)
-      throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+      return { success: false,message:'Internal server error',status: HttpStatus.INTERNAL_SERVER_ERROR};
     }
   }
    
   @Post('forget')
-  async forgetPassword(@Body() forgetUserDto: ForgetUserDto):Promise<any> {
+  async forgetPassword(@Body() forgetUserDto: ForgetUserDto):Promise<ApiResponse<Users[]>> {
     try {
-      const otp = await this.userService.generateOtp(forgetUserDto);
+      const otp:number = await this.userService.generateOtp(forgetUserDto);
       await this.userService.sendOtp(forgetUserDto, otp);
-      return { success:true, message: 'An OTP has been sent to your email address', status: HttpStatus.OK };
+      return { success:true, message: 'An OTP has been sent to your email address',status: HttpStatus.OK };
     } catch (error) {
       console.error('Error while processing forget password request:', error);
-      throw new HttpException('Failed to process forget password request', HttpStatus.INTERNAL_SERVER_ERROR);
+      return { success: false,message:'Failed to process forget password request',status: HttpStatus.INTERNAL_SERVER_ERROR};
     }
   }
 
   @Post('verify')
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto): Promise<any> {
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto):Promise<ApiResponse<Users[]>>{
     try {
       await this.userService.verifyOtp(verifyOtpDto);
       return { success:true,message: 'OTP verified successfully',status: HttpStatus.OK };
     } catch (error) {
       console.error('Error while verifying OTP:', error);
-      throw new HttpException('Failed to verify OTP', HttpStatus.INTERNAL_SERVER_ERROR);
+      return { success: false,message:'Failed to verify OTP',status: HttpStatus.INTERNAL_SERVER_ERROR};
     }
     }
     
     @Post('reset')
-    async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<any> {
+    async resetPassword(@Body() resetPasswordDto: ResetPasswordDto):Promise<ApiResponse<Users[]>> {
       try {
         await this.userService.resetPassword(resetPasswordDto);
         return { success:true,message: 'Password reset successfully',status: HttpStatus.OK };
       } catch (error) {
         console.error('Error resetting password:', error);
-        throw new HttpException('Failed to reset password', HttpStatus.INTERNAL_SERVER_ERROR);
+        return { success: false,message:'Failed to reset password', status:HttpStatus.INTERNAL_SERVER_ERROR};
       }
     } 
 
   }
- 

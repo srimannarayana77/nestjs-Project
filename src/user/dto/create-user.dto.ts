@@ -4,7 +4,7 @@ import { IsString,IsEmail, MinLength,IsEnum, IsNotEmpty,IsNumber, IsAlpha,Valida
 // import { IsUniqueEmailConstraint } from 'src/helpers/errorValidation';
 
 export class CreateUserDto {
-  @IsAlpha()
+  @IsAlpha('en-US',{message:'Invalid Name'})
   @IsString()
   @IsNotEmpty({ message: 'name is required' })
   name: string;
@@ -23,16 +23,14 @@ export class CreateUserDto {
   password: string;
 
   // @Validate(IsSameAsConstraint, ['password'], { message: 'Passwords do not match' })
-  @IsString()
-  @IsNotEmpty({ message: 'confirmpassword is required' })
   confirm_password?: string;
 
   @IsEnum(['admin', 'superAdmin', 'user'])
-  @IsNotEmpty({ message: 'usertype is required' })
+  @IsNotEmpty({ message: 'usertype is required' }) 
   user_type: string;
   
   @IsNumber({}, { message: 'Phone number must be a number' })
-  @IsNotEmpty({ message: 'phonenumber is required' })
+  @IsNotEmpty({ message: 'phonenumber is required' }) 
   phone_number: number;
    
 }
