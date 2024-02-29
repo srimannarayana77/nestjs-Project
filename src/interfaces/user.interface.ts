@@ -1,5 +1,4 @@
-import { ObjectId } from "mongoose";
-
+import { ObjectId } from 'mongoose';
 export interface Users {
     name: string;
     user_name: string;
@@ -10,6 +9,6 @@ export interface Users {
     phone_number: number;
     otp?: number;
     is_verified?: boolean;
-    _id?:string | Object;
+    _id?:string;
   }
-  
+   

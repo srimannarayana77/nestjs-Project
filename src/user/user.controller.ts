@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,UseGuards,Request} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,UseGuards,Request,Res,Query} from '@nestjs/common';
 import { UserService } from './user.service'; 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -7,11 +7,12 @@ import { VerifyOtpDto } from './dto/verify-otp-user.dto';
 import { ResetPasswordDto } from './dto/reset-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ForgetUserDto } from './dto/forget-user.dto';
-import { AuthGuard } from 'src/middlewares/verifyToken';
+import { AuthGuard } from 'src/middlewares/auth.guard';
 import { configData } from 'src/config/appConfig.';
 import {Users} from '../interfaces/user.interface'
 import { ApiResponse } from 'src/interfaces/apiResponse.interface';
 import * as bcrypt from 'bcrypt';
+import { filterUsers } from 'src/helpers/filters';
 
 @Controller('users')
 export class UserController {
@@ -36,17 +37,39 @@ export class UserController {
     }
   }
   
-
+  
+ 
   @Get('all')
-  async findAll():Promise<ApiResponse<Users[]>> {
+  async findAll(@Query('page') page: number = 1,@Query('limit') limit: number =3,@Query('sortBy') sortBy: string = '_id',@Query('sortType') sortType: string = 'desc',@Query('name') name?: string,@Query('user_name') user_name?: string,@Query('email') email?: string,@Query('user_type') user_type?: string,@Query('phone_number') phone_number?: string): Promise<ApiResponse<Users[]>> {
     try {
-      const users = await this.userService.findAll();
-      return { success: true, data:users,status: HttpStatus.OK };
+      let filter: any = {}; 
+      if (name || user_name || email || user_type || phone_number) {
+        filter = { name, user_name, email, user_type, phone_number };
+      }
+      console.log("filters=",filter)
+      const sort = { [sortBy]: sortType === 'desc' ? -1 : 1 };
+      console.log("sort=",sort)
+      const skip = (page - 1) * limit; 
+      console.log("skip=",skip)
+      const users = await this.userService.findAll(filter,sort, limit, skip);
+
+      return { success: true, data: users, status: HttpStatus.OK };
     } catch (error) {
-      console.error('Error for getall users:',error)
-      return { success:false, error: error.message ,status: HttpStatus.INTERNAL_SERVER_ERROR};
+      console.error('Error fetching users:', error);
+      return { success: false, error: error.message, status: HttpStatus.INTERNAL_SERVER_ERROR };
     }
   }
+
+  // @Get('all')
+  // async findAll():Promise<ApiResponse<Users[]>> {
+  //   try {
+  //     const users:Users[] = await this.userService.findAll();
+  //     return { success: true, data:users,status: HttpStatus.OK };
+  //   } catch (error) {
+  //     console.error('Error for getall users:',error)
+  //     return { success:false, error: error.message ,status: HttpStatus.INTERNAL_SERVER_ERROR};
+  //   }
+  // }
 
   @Post('/signin')
   async signIn(@Body() signInUserDto: SignInUserDto):Promise<ApiResponse<Users[]>> {
@@ -60,11 +83,9 @@ export class UserController {
       if (!isPasswordValid) {
         return {success:false, message: 'Invalid password' , status:HttpStatus.UNAUTHORIZED};
       }
-      const expiresIn = 3600;
+      const expiresIn = 36000;
       const secretKey = configData.secretKey;
-      const access_token = this.jwtService.sign({userId:user._id,email: user.email , password: user.password  }, { expiresIn, secret: secretKey });
-      const userWithoutPassword = { ...user };
-      delete userWithoutPassword.password
+      const access_token = this.jwtService.sign({id:user._id,email: user.email , password: user.password,user_type:user.user_type }, { expiresIn, secret: secretKey });
       return { success: true, data:{user,access_token},status: HttpStatus.OK };
     } catch (error) {
       console.error('Errors in signin:',error)
@@ -74,7 +95,7 @@ export class UserController {
 
   @UseGuards(AuthGuard)
   @Get('profile')
-  async getUserProfile(@Request() req):Promise<ApiResponse<Users[]>> {
+  async getUserProfile(@Request() req):Promise<ApiResponse<Users>> {
     try {
       const user = req.user
       console.log("userId=",user)
@@ -97,7 +118,7 @@ export class UserController {
     try {
       const updateUser = req.user 
       console.log("updateuser=",updateUser   )
-      const updateProfile:Users = await this.userService.updateUserById(updateUserDto,updateUser.userId);
+      const updateProfile:Users = await this.userService.updateUserById(updateUser.id,updateUserDto);
       console.log("updateprofile=",updateProfile);
     
       if (!updateProfile) {
@@ -110,7 +131,7 @@ export class UserController {
     }
   }
 
-  @Delete(':id')
+  @Delete(':id/delete')
   async deleteUser(@Param('id') userId: string):Promise<ApiResponse<Users[]>> {
     try {
       const deletedUser:Users = await this.userService.deleteUserById(userId);

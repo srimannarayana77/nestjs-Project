@@ -9,5 +9,10 @@ const MONGODB = {
 export const configData = {
     db:MONGODB,
     port:process.env.PORT,
-    secretKey:process.env.SECRET_KEY
+    secretKey: process.env.SECRET_KEY,
+    awsBucket: process.env.AWS_S3_BUCKET,
+    awsCompressedBucket: process.env.AWS_S3_COMPRESSED_BUCKET,
+    awsAccessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
+    awsSecretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+    awsBucketRegion:process.env.AWS_S3_BUCKET_REGION
 }

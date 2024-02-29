@@ -11,6 +11,7 @@ import { ForgetUserDto } from './dto/forget-user.dto';
 import * as nodemailer from 'nodemailer';
 import { User } from '../schemas/user.schema';
 
+//REVIEW:
 @Injectable()
 export class UserService { //UserService is decorated with @Injectable() to indicate that it is a provider that may have dependencies
   constructor(
@@ -34,8 +35,11 @@ export class UserService { //UserService is decorated with @Injectable() to indi
     return !!user;
   }
 
-  async findAll(): Promise<User[]> { 
-      return this.userModel.find().exec();
+  // async findAll(): Promise<User[]> { 
+  //     return this.userModel.find().exec();
+  // }
+  async findAll(filter:any,sort: any, limit: number, skip: number): Promise<User[]> {
+      return this.userModel.find(filter).sort(sort).limit(limit).skip(skip).exec();
   }
 
   async findUserByEmailOrUsername(signInUserDto: SignInUserDto): Promise<User | null> {
@@ -47,19 +51,16 @@ export class UserService { //UserService is decorated with @Injectable() to indi
       return await this.userModel.findOne({ user_name }).exec();
     }
 
-    return null;
   }
 
   async getUserById(userId: string): Promise<User | null> {
     return await this.userModel.findById(userId).exec();
   }
  
-  async updateUserById(updateUserDto:UpdateUserDto,userId:any) {
+  async updateUserById(id:any,updateUserDto: CreateUserDto):Promise<User | null> {
     const hashedPassword = await this.hashService.hashPasswords(updateUserDto.password);
-     console.log('hash=',hashedPassword)
     updateUserDto.password = hashedPassword;
-
-    const updatedUser =  await this.userModel.findByIdAndUpdate(userId,updateUserDto ,{ new: true }); 
+    const updatedUser = await this.userModel.findByIdAndUpdate(id,updateUserDto ,{ new: true }); 
     return updatedUser
   }
 
@@ -78,7 +79,7 @@ export class UserService { //UserService is decorated with @Injectable() to indi
   
 
   async sendOtp(forgetUserDto: ForgetUserDto, otp: number){
-    try {
+    // try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -96,10 +97,10 @@ export class UserService { //UserService is decorated with @Injectable() to indi
 
       await transporter.sendMail(mailOptions);
       console.log('OTP sent successfully');
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      throw new Error('Failed to send OTP');
-    }
+    // } catch (error) {
+    //   console.error('Error sending OTP:', error);
+    //   throw new Error('Failed to send OTP');
+    // }
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<void> {

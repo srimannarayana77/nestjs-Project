@@ -1,26 +1,27 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model,ObjectId } from 'mongoose';
+import { User } from 'src/schemas/user.schema';
+import { PersonalDetail } from '../schemas/personal-detail.schema';
 import { CreatePersonalDetailDto } from './dto/create-personal-detail.dto';
 import { UpdatePersonalDetailDto } from './dto/update-personal-detail.dto';
 
 @Injectable()
 export class PersonalDetailService {
-  create(createPersonalDetailDto: CreatePersonalDetailDto) {
-    return 'This action adds a new personalDetail';
+  constructor(
+    @InjectModel(PersonalDetail.name) private personalDetailModel: Model<PersonalDetail>,
+  ) {}
+
+  async create(createPersonalDetailDto: CreatePersonalDetailDto): Promise<PersonalDetail> {
+    const createdPersonalDetail = new this.personalDetailModel(createPersonalDetailDto);
+    return createdPersonalDetail.save();
   }
 
-  findAll() {
-    return `This action returns all personalDetail`;
+  async findByUserId( user_id:string): Promise<PersonalDetail | null> {
+    return this.personalDetailModel.findOne({ user_id }).exec();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} personalDetail`;
-  }
-
-  update(id: number, updatePersonalDetailDto: UpdatePersonalDetailDto) {
-    return `This action updates a #${id} personalDetail`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} personalDetail`;
+  async update(user_id: string, updatePersonalDetailDto: UpdatePersonalDetailDto): Promise<PersonalDetail | null> {
+    return this.personalDetailModel.findOneAndUpdate({ user_id }, updatePersonalDetailDto, { new: true }).exec();
   }
 }

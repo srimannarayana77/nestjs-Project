@@ -1,50 +1,40 @@
-import { Schema, model } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-const jobSchema = new Schema({
-    title: {
-        type: String,
-        required: true
-    },
-    skills: {
-        type: [String],
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    created_by: {
-        type: String,
-        required: true
-    },
-    number_of_openings: {
-        type: Number,
-        required: true
-    },
-    company_name: {
-        type: String,
-        required: true
-    },
-    job_location: {
-        type: String,
-        required: true
-    },
-    salary: {
-        type: String,
-        required: true
-    },
-    experience_level: {
-        type: String,
-        enum: ['fresher', 'experienced'],
-        required: true
-    },
-    employment_type: {
-        type: String,
-        enum: ['fulltime', 'parttime'],
-        required: true
-    },
-}, {
-    timestamps: true
-});
 
-export const JobModel = model('Job', jobSchema, "jobs");
+export type JobDocument = Job & Document;
+
+@Schema({ collection: "jobs", timestamps: true })
+export class Job {
+  @Prop({ required: true })
+  title: string;
+
+  @Prop({ type: [String], required: true })
+  skills: string[];
+
+  @Prop({ required: true })
+  description: string;
+
+  @Prop({ required: true })
+  created_by: string;
+
+  @Prop({ required: true })
+  number_of_openings: number;
+
+  @Prop({ required: true })
+  company_name: string;
+
+  @Prop({ required: true })
+  job_location: string;
+
+  @Prop({ required: true })
+  salary: number;
+
+  @Prop({ required: true, enum: ['fresher', 'experienced'] })
+  experience_level: string;
+
+  @Prop({ required: true, enum: ['fulltime', 'parttime'] })
+  employment_type: string;
+}
+
+export const JobSchema = SchemaFactory.createForClass(Job);
