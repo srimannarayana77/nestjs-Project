@@ -85,8 +85,8 @@ export class UserController {
       }
       const expiresIn = 36000;
       const secretKey = configData.secretKey;
-      const access_token = this.jwtService.sign({id:user._id,email: user.email , password: user.password,user_type:user.user_type }, { expiresIn, secret: secretKey });
-      return { success: true, data:{user,access_token},status: HttpStatus.OK };
+      const access_token = this.jwtService.sign({id:user._id,email: user.email , password: user.password,user_type:user.user_type,name:user.name }, { expiresIn, secret: secretKey });
+      return { success: true,message:"User sign-in successfully" ,data:{user,access_token},status: HttpStatus.OK };
     } catch (error) {
       console.error('Errors in signin:',error)
      return { success: false, error: error.message ,status:HttpStatus.INTERNAL_SERVER_ERROR};
@@ -146,7 +146,7 @@ export class UserController {
   }
    
   @Post('forget')
-  async forgetPassword(@Body() forgetUserDto: ForgetUserDto):Promise<ApiResponse<Users[]>> {
+  async forgetPassword(@Body() forgetUserDto: ForgetUserDto):Promise<ApiResponse<Users>> {
     try {
       const otp:number = await this.userService.generateOtp(forgetUserDto);
       await this.userService.sendOtp(forgetUserDto, otp);

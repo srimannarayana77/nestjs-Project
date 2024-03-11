@@ -1,9 +1,14 @@
-import { IsString, IsArray, IsNumber, IsEnum, IsNotEmpty } from 'class-validator';
-
+import { IsString, IsArray, IsNumber, IsEnum, IsNotEmpty,IsMongoId,IsOptional } from 'class-validator';
+import { ObjectId } from 'mongoose';
 
 export class CreateJobDto {
+  
+  @IsOptional()
+  @IsMongoId()
+  user_id?: ObjectId;
+
   @IsString({ message: 'Invalid title' })
-  @IsNotEmpty({ message: 'Title is required' })
+  @IsNotEmpty({ message: 'Title is required' }) 
   title: string;
 
   @IsString({ each: true, message: 'Each skill must be a string' })
@@ -14,9 +19,8 @@ export class CreateJobDto {
   @IsNotEmpty({ message: 'Description is required' })
   description: string;
 
-  @IsString({ message: 'Invalid Creator' })
-  @IsNotEmpty({ message: 'Creator is required' })
-  created_by: string;
+ 
+  created_by?: string;
 
   @IsNumber({}, { message: 'Number of openings give in numbers' })
   @IsNotEmpty({ message: 'Number of openings is required' })
@@ -34,6 +38,10 @@ export class CreateJobDto {
   @IsNumber({}, { message: 'give salary in numbers' })
   @IsNotEmpty({ message: 'Salary is required' })
   salary: number;
+
+  @IsEnum(['active', 'inactive'], { message: 'Invalid status' })
+  @IsNotEmpty({ message: 'Status is required' })
+  status: string;
 
 
   @IsEnum(['fresher', 'experienced'], { message: 'Invalid experience level' })

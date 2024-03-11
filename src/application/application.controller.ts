@@ -6,6 +6,8 @@ import { Applications } from 'src/interfaces/application.interface';
 import { ApiResponse } from 'src/interfaces/apiResponse.interface';
 import { AuthGuard } from 'src/middlewares/auth.guard';
 import { EmailDto } from './dto/email-dto';
+import { sendEmails } from '../helpers/sendInBlueEmailHelper'
+import {getPreSignedURL,getPreSignedURLToViewObject} from '../helpers/uploadResumeHelper'
 
 
 @Controller('application')
@@ -15,7 +17,7 @@ export class ApplicationController {
   async uploadFile(@Body() requestBody: { bucketName: string, key: string, contentType: string }) {
     try {
       const { bucketName, key, contentType } = requestBody;
-      const presignedUrl = await this.applicationService.getPreSignedURL(bucketName, key, contentType);
+      const presignedUrl = await getPreSignedURL(bucketName, key, contentType);
       console.log("presignedurl=", presignedUrl)
       return { success: true, message: 'Presigned url retrived successfully', data: presignedUrl, key, status: HttpStatus.OK };
     } catch (error) {
@@ -30,7 +32,7 @@ export class ApplicationController {
       createApplicationDto.user_id = req.user.id;
       const createdApplication: Applications = await this.applicationService.create(createApplicationDto);
       const emailDto = new EmailDto(createApplicationDto.email);
-      await this.applicationService.sendEmail(emailDto);
+      await sendEmails(emailDto);
       return { success: true, message: 'Application created successfully', data: createdApplication, status: HttpStatus.CREATED };
     } catch (error) {
       console.error('Error creating application:', error);
@@ -57,7 +59,7 @@ export class ApplicationController {
       if (!application) {
         return { success: false, error: 'Application not found', status: HttpStatus.NOT_FOUND };
       }
-      const preSignedURL = await this.applicationService.getPreSignedURLToViewObject();
+      const preSignedURL = await getPreSignedURLToViewObject();
       return { success: true, message: 'Pre-signed URL generated successfully', url: preSignedURL, status: HttpStatus.OK };
       // const preSignedURL = await this.applicationService.getPreSignedURLToViewObject(application.bucketName, application.key);
       // const applicationWithPreSignedURL = { ...application, preSignedURL };

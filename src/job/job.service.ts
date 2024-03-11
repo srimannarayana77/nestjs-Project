@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Job, JobDocument } from '../schemas/job.schema';
+import { Job } from '../schemas/job.schema';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 
@@ -15,7 +15,7 @@ export class JobService {
   }
 
   async findAll(): Promise<Job[]> {
-    return this.jobModel.find().exec();
+    return this.jobModel.find().populate('user_id').exec();
   }
 
   async findOne(id: string): Promise<Job> {

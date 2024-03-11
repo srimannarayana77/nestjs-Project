@@ -13,5 +13,5 @@ export interface PersonalDetails {
     institution: string;
     year_of_completion: number;
   }[];
-  skills?: string[];
+  skills: string[];
 }
