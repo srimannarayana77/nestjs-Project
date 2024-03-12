@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,UseGuards,Request,Res,Query} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus,UseGuards,Request,Res,Query, Render} from '@nestjs/common';
 import { UserService } from './user.service'; 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -12,6 +12,8 @@ import { configData } from 'src/config/appConfig.';
 import {Users} from '../interfaces/user.interface'
 import { ApiResponse } from 'src/interfaces/apiResponse.interface';
 import * as bcrypt from 'bcrypt';
+import { ejsTemplate } from 'views';
+import * as ejs from "ejs";
 import { filterUsers } from 'src/helpers/filters';
 
 @Controller('users')
@@ -36,10 +38,10 @@ export class UserController {
       return { success:false, error: error.message ,status: HttpStatus.INTERNAL_SERVER_ERROR};
     }
   }
-  
-  
+
  
   @Get('all')
+  // @Render('index')
   async findAll(@Query('page') page: number = 1,@Query('limit') limit: number =3,@Query('sortBy') sortBy: string = '_id',@Query('sortType') sortType: string = 'desc',@Query('name') name?: string,@Query('user_name') user_name?: string,@Query('email') email?: string,@Query('user_type') user_type?: string,@Query('phone_number') phone_number?: string): Promise<ApiResponse<Users[]>> {
     try {
       let filter: any = {}; 
@@ -51,9 +53,13 @@ export class UserController {
       console.log("sort=",sort)
       const skip = (page - 1) * limit; 
       console.log("skip=",skip)
-      const users = await this.userService.findAll(filter,sort, limit, skip);
+      const users = await this.userService.findAll(filter, sort, limit, skip);
+      const ejsData = { data: users }; // Pass the users data to the template
+      let ejsResponse = ejs.render(ejsTemplate, ejsData); 
+          ejsResponse = ejsResponse.replace(/\n/g, '');
+      return(ejsResponse)
+      // return { success: true, data: ejsResponse, status: HttpStatus.OK };
 
-      return { success: true, data: users, status: HttpStatus.OK };
     } catch (error) {
       console.error('Error fetching users:', error);
       return { success: false, error: error.message, status: HttpStatus.INTERNAL_SERVER_ERROR };

@@ -24,7 +24,7 @@ export class AuthGuard implements CanActivate {
             console.log("req[user]=", request['user']);
             return true;
         } catch (error) {
-            console.error('Error in AuthGuard:', error);
+            console.error('Error in AuthGuard:', error); 
             throw new UnauthorizedException({ success: false, message: "Token is expired", statusCode: 422 });
         }
     }
